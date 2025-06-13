@@ -12,11 +12,13 @@ password: admin
 
 ### Video demo
 
-youtube 
+https://www.youtube.com/watch?v=kpZIwkkAm0k
 
-### Yêu cầu hệ thống
-- Go 1.24.4
+### Technical information 
+- Go
 - PostgreSQL
+- Websocket
+- JWT
 
 ### Database
 
