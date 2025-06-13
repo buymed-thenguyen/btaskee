@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Phòng chờ</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f3f3f3; padding: 40px; text-align: center; }
+        .code-box { font-size: 24px; font-weight: bold; margin-bottom: 10px; color: #007bff; }
+        .quiz-info { margin-bottom: 30px; font-size: 18px; }
+        .participants { width: 300px; margin: auto; text-align: left; }
+        .user { padding: 10px; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); margin-bottom: 8px; background: white; }
+        .user.me { background: #333; color: white; font-weight: bold; }
+        #start-btn { padding: 12px 24px; font-size: 16px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; margin-top: 20px; }
+        #start-btn:hover { background: #218838; }
+    </style>
+</head>
+<body>
+<div class="code-box" id="session-code">Mã phòng: ...</div>
+<div class="quiz-info" id="quiz-info">Đang tải thông tin...</div>
+<div class="participants" id="participant-list"></div>
+<button id="start-btn" style="display: none;">Bắt đầu</button>
+
+<script>
+    const token = localStorage.getItem('token')
+    if (!token) {
+        alert('Vui lòng đăng nhập');
+        location.href = '/'
+    }
+
+    const urlParams = new URLSearchParams(window.location.search)
+    const code = urlParams.get('code')
+    const userId = parseJwt(token).user_id
+
+    document.getElementById('session-code').innerText = `Mã phòng: ${code}`
+
+    // Load session info
+    fetch(`http://localhost:8080/session/${code}`, {
+        headers: { Authorization: `Bearer ${token}` }
+    })
+        .then(res => res.json())
+        .then(json => {
+            const quiz = json.data.quiz
+            document.getElementById('quiz-info').innerText = `Quiz: ${quiz.title} | ${quiz.total_question} câu hỏi`
+            if (json.data.created_by === userId) {
+                document.getElementById('start-btn').style.display = 'inline-block'
+            }
+        })
+
+    function loadParticipants() {
+        fetch(`http://localhost:8080/session/${code}/participants`, {
+            headers: { Authorization: `Bearer ${token}` }
+        })
+            .then(res => res.json())
+            .then(json => {
+                const list = document.getElementById('participant-list')
+                list.innerHTML = ''
+                json.data.forEach(p => {
+                    const div = document.createElement('div')
+                    div.className = 'user' + (p.user_id === userId ? ' me' : '')
+                    div.innerText = p.user_name
+                    list.appendChild(div)
+                })
+            })
+    }
+
+    // Call once when loaded
+    loadParticipants()
+
+    // WebSocket connect
+    const ws = new WebSocket(`ws://localhost:8080/ws/${code}`)
+    ws.onmessage = (event) => {
+        const msg = JSON.parse(event.data)
+        if (msg.event === 'user_joined') {
+            loadParticipants()
+        } else if (msg.event === 'start_session') {
+            window.location.href = `/question?code=${code}`
+        }
+    }
+
+    // Decode JWT helper
+    function parseJwt(t) {
+        try {
+            return JSON.parse(atob(t.split('.')[1]))
+        } catch (e) {
+            return {}
+        }
+    }
+
+    document.getElementById("start-btn").onclick = () => {
+        fetch(`http://localhost:8080/session/${code}/start`, {
+            method: "PUT",
+            headers: { Authorization: `Bearer ${token}` }
+        })
+            .then(res => {
+                if (!res.ok) throw new Error("Lỗi khi bắt đầu phiên chơi")
+            })
+            .catch(() => alert("Không thể bắt đầu phiên chơi"))
+    }
+</script>
+</body>
+</html>

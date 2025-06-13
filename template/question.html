@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Câu hỏi</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f1f3f5; margin: 0; padding: 40px; display: flex; gap: 20px; }
+        .container { flex: 1; max-width: 700px; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 0 15px rgba(0,0,0,0.1); position: relative; transition: all 0.3s ease; }
+        .question-text { font-size: 22px; font-weight: bold; margin-bottom: 20px; text-align: center; transition: all 0.3s ease; }
+        .question-counter {
+            position: static;
+            margin-bottom: 10px;
+            color: #555;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 30px; transition: all 0.3s ease; }
+        .option {
+            background: white;
+            border-radius: 8px;
+            padding: 14px;
+            text-align: center;
+            box-shadow: 0 0 8px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .option.selected {
+            background: #28a745;
+            color: white;
+            font-weight: bold;
+        }
+        .nav-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        .nav-buttons button {
+            padding: 10px 20px;
+            border: none;
+            background: #007bff;
+            color: white;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .nav-buttons button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .nav-buttons button:hover:enabled { background: #0056b3; }
+        #submit-btn {
+            background: #28a745;
+        }
+        #submit-btn:hover {
+            background: #1e7e34;
+        }
+        .leaderboard {
+            width: 250px;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+            overflow-y: auto;
+            max-height: 80vh;
+        }
+        .leaderboard h3 { margin-top: 0; text-align: center; }
+        .participant {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: white;
+            padding: 8px 12px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        .me {
+            background: #111;
+            color: white;
+        }
+        .rank {
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        .gold {
+            color: #b8860b;
+            background: #fff8dc;
+            border-radius: 50%;
+            width: 30px;  /* Thêm width cố định */
+            height: 30px; /* Thêm height cố định */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;   /* Bỏ padding */
+        }
+        .silver {
+            color: #888;
+            background: #f0f0f0;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+        .bronze {
+            color: #8b4513;
+            background: #faebd7;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+        .gray {
+            color: #444;
+            font-weight: bold;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            background: #f5f5f5;
+        }
+        .triangle-up { color: green; margin-left: 6px; }
+        .triangle-down { color: red; margin-left: 6px; }
+        #result-message {
+            display: none;
+            font-size: 24px;
+            text-align: center;
+            margin: 40px 0;
+            line-height: 1.6;
+        }
+        .score-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            min-width: 80px;
+        }
+        .score-points {
+            font-weight: bold;
+            color: #333;
+        }
+        .score-time {
+            font-size: 12px;
+            color: #666;
+            margin-top: 2px;
+        }
+        .me .score-points, .me .score-time {
+            color: white;
+        }
+        .room-code {
+            text-align: center;
+            font-size: 28px;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+        }
+
+        #result-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .back-button {
+            margin-top: 20px;
+            padding: 12px 24px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .back-button:hover {
+            background: #218838;
+        }
+
+
+    </style>
+</head>
+<body>
+<div class="container" id="question-container">
+    <div class="question-counter" id="counter">1 / ?</div>
+    <div class="question-text" id="question-text">Đang tải câu hỏi...</div>
+    <div class="options" id="options"></div>
+    <div id="result-message"></div>
+    <div class="nav-buttons">
+        <button id="prev-btn" onclick="prev()">Quay lại</button>
+        <button id="next-btn" onclick="next()">Tiếp theo</button>
+        <button id="submit-btn" style="display:none;" onclick="submitAnswers()">Xác nhận tất cả đáp án</button>
+    </div>
+</div>
+
+<div class="leaderboard">
+    <h3>Bảng xếp hạng</h3>
+    <div id="leaderboard-list"></div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const roomCodeDiv = document.createElement('div');
+        roomCodeDiv.className = 'room-code';
+        roomCodeDiv.innerText = `#${code}`;
+        document.getElementById('question-container').insertBefore(roomCodeDiv, document.getElementById('question-container').firstChild);
+    });
+
+    const token = localStorage.getItem('token')
+    if (!token) {
+        alert("Vui lòng đăng nhập");
+        window.location.href = "/"
+    }
+    const urlParams = new URLSearchParams(window.location.search)
+    const code = urlParams.get('code')
+    let quiz = null
+    let index = 0
+    const answers = {}
+    let prevRanks = {}
+    let userID = null
+
+    fetch(`http://localhost:8080/session/${code}/quiz`, {
+        headers: { Authorization: `Bearer ${token}` }
+    })
+        .then(res => res.json())
+        .then(json => {
+            quiz = json.data
+            fetchUserAnswers()
+        })
+
+    function fetchUserAnswers() {
+        fetch(`http://localhost:8080/session/${code}/participants/answers`, {
+            headers: { Authorization: `Bearer ${token}` }
+        })
+            .then(res => res.json())
+            .then(json => {
+                json.data.forEach(a => {
+                    answers[a.question_id] = a.answer_option_id
+                })
+
+                // Kiểm tra nếu đã trả lời đủ số câu hỏi
+                if (quiz && Object.keys(answers).length === quiz.questions.length) {
+                    // Nếu đã trả lời đủ, hiển thị màn hình kết quả
+                    showResult()
+                } else {
+                    // Nếu chưa trả lời đủ, hiển thị câu hỏi
+                    render()
+                }
+            })
+    }
+
+    function render() {
+        const q = quiz.questions[index]
+        document.getElementById('question-text').innerText = q.question_text
+        document.getElementById('counter').innerText = `${index + 1} / ${quiz.questions.length}`
+
+        const opts = document.getElementById('options')
+        opts.innerHTML = ''
+        q.answer_options.forEach(opt => {
+            const div = document.createElement('div')
+            div.className = 'option'
+            div.innerText = opt.text
+            if (answers[q.id] === opt.id) div.classList.add('selected')
+            div.onclick = () => {
+                answers[q.id] = opt.id
+                render()
+            }
+            opts.appendChild(div)
+        })
+
+        const lastQuestion = index === quiz.questions.length - 1
+        const hasAnswer = answers[q.id] !== undefined
+
+        document.getElementById('next-btn').style.display = !lastQuestion ? 'inline-block' : 'none'
+        document.getElementById('next-btn').disabled = !hasAnswer
+        document.getElementById('prev-btn').style.display = index > 0 ? 'inline-block' : 'none'
+        document.getElementById('submit-btn').style.display = lastQuestion && hasAnswer ? 'inline-block' : 'none'
+    }
+
+    function next() {
+        if (index < quiz.questions.length - 1) {
+            index++
+            render()
+        }
+    }
+
+    function prev() {
+        if (index > 0) {
+            index--
+            render()
+        }
+    }
+
+    function submitAnswers() {
+        const payload = {
+            answers: Object.entries(answers).map(([question_id, answer_option_id]) => ({
+                question_id: Number(question_id),
+                answer_option_id
+            }))
+        }
+        fetch(`http://localhost:8080/session/${code}/submit`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        })
+            .then(res => {
+                if (!res.ok) throw new Error()
+                return res.json()
+            })
+            .then(() => showResult())
+            .catch(() => alert('Lỗi khi nộp đáp án'))
+    }
+
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+
+
+    function showResult() {
+        setTimeout(() => {
+            fetch(`http://localhost:8080/session/${code}/participants`, {
+                headers: { Authorization: `Bearer ${token}` }
+            })
+                .then(res => res.json())
+                .then(json => {
+                    const me = json.data.find(u => u.user_id === userID);
+                    const point = me?.score || 0;
+                    const ms = me?.time_consumed || 0;
+                    const minutes = Math.floor(ms / 60000);
+                    const seconds = Math.floor((ms % 60000) / 1000);
+
+                    // Ẩn các phần tử không cần thiết
+                    document.getElementById('counter').style.display = 'none';
+                    document.getElementById('question-text').style.display = 'none';
+                    document.getElementById('options').style.display = 'none';
+                    document.querySelector('.nav-buttons').style.display = 'none';
+
+                    // Cập nhật nội dung container
+                    const container = document.getElementById('question-container');
+                    const roomCode = container.querySelector('.room-code');
+                    const resultHTML = `
+                    <div id="result-container">
+                        <div style="font-size: 24px; text-align: center; line-height: 1.6;">
+                            🎉 Chúc mừng bạn đã đạt <b>${point}</b> điểm!<br>
+                            ⏱️ Thời gian: ${minutes} phút ${seconds} giây
+                        </div>
+                        <button class="back-button" onclick="window.location.href='/quizzes'">
+                            ← Quay về trang Quiz
+                        </button>
+                    </div>
+                `;
+                    // Giữ lại mã phòng và thêm nội dung mới
+                    container.innerHTML = '';
+                    container.appendChild(roomCode);
+                    container.insertAdjacentHTML('beforeend', resultHTML);
+                });
+        }, 1000);
+    }
+
+
+    let myUserID = null;
+
+    function fetchMyUserID() {
+        fetch('http://localhost:8080/user/me', {
+            headers: { Authorization: `Bearer ${token}` }
+        })
+            .then(res => res.json())
+            .then(json => {
+                myUserID = json.data.id;
+                // Sau khi có user_id, fetch leaderboard
+                fetchLeaderboard();
+            })
+            .catch(err => console.error('Lỗi khi lấy thông tin user:', err));
+    }
+
+    function fetchLeaderboard() {
+        fetch(`http://localhost:8080/session/${code}/leaderboard`, {
+            headers: { Authorization: `Bearer ${token}` }
+        })
+            .then(res => res.json())
+            .then(json => {
+                const users = json.data;
+                const lb = document.getElementById('leaderboard-list');
+                lb.innerHTML = '';
+
+                users.forEach((u, i) => {
+                    const div = document.createElement('div');
+                    div.className = 'participant';
+                    if (u.user_id === myUserID) {
+                        div.classList.add('me');
+                        userID = u.user_id;
+                    }
+
+                    const left = document.createElement('div');
+                    left.style.display = 'flex';
+                    left.style.alignItems = 'center';
+                    left.style.gap = '12px';
+
+                    // Tạo rank
+                    const rankSpan = document.createElement('span');
+                    const rankClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : 'gray';
+                    rankSpan.className = `rank ${rankClass}`;
+                    rankSpan.innerText = `#${i + 1}`;
+
+                    // Tạo tên người chơi
+                    const name = document.createElement('span');
+                    name.innerText = u.user_name;
+
+                    // Thêm mũi tên thay đổi hạng
+                    if (prevRanks[u.user_id] !== undefined) {
+                        const delta = prevRanks[u.user_id] - i;
+                        if (delta > 0) name.innerHTML += ' <span class="triangle-up">▲</span>';
+                        else if (delta < 0) name.innerHTML += ' <span class="triangle-down">▼</span>';
+                    }
+                    prevRanks[u.user_id] = i;
+
+                    left.appendChild(rankSpan);
+                    left.appendChild(name);
+
+                    const scoreInfo = document.createElement('div');
+                    scoreInfo.className = 'score-info';
+
+                    const scorePoints = document.createElement('div');
+                    scorePoints.className = 'score-points';
+                    scorePoints.innerText = `${u.score || 0} điểm`;
+
+                    const scoreTime = document.createElement('div');
+                    scoreTime.className = 'score-time';
+                    if (u.time_consumed) {
+                        const minutes = Math.floor(u.time_consumed / 60000);
+                        const seconds = Math.floor((u.time_consumed % 60000) / 1000);
+                        scoreTime.innerText = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                    } else {
+                        scoreTime.innerText = '--:--';
+                    }
+
+                    scoreInfo.appendChild(scorePoints);
+                    scoreInfo.appendChild(scoreTime);
+
+                    div.appendChild(left);
+                    div.appendChild(scoreInfo);
+                    lb.appendChild(div);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching leaderboard:', error);
+            });
+    }
+
+    const ws = new WebSocket(`ws://localhost:8080/ws/${code}`);
+    ws.onopen = () => console.log('WebSocket connected');
+    ws.onmessage = (event) => {
+        console.log('WebSocket message received:', event.data);
+        const msg = JSON.parse(event.data);
+        if (msg.event === 'user_answered') {
+            console.log('Fetching new leaderboard data...');
+            fetchLeaderboard();
+        }
+    };
+    ws.onerror = (error) => console.error('WebSocket error:', error);
+
+    fetchMyUserID();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Đăng ký & Đăng nhập</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        h1.title {
+            font-size: 28px;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        .container {
+            width: 360px;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        input {
+            width: 100%;
+            margin: 10px 0;
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            background: white;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(to right, #28a745, #218838);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        button:hover {
+            background: linear-gradient(to right, #218838, #1e7e34);
+        }
+        .switch {
+            text-align: center;
+            margin-top: 16px;
+            cursor: pointer;
+            color: #007bff;
+        }
+        .join-form {
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .input-group {
+            width: 100%;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        button {
+            width: 100%;
+            padding: 12px;
+            box-sizing: border-box;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+
+        input[type="text"],
+        input[type="password"] {
+            border: 1px solid #ddd;
+            background: white;
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        .quiz-list {
+            width: 100%;
+            margin-top: 20px;
+        }
+
+    </style>
+</head>
+<body>
+<h1 class="title">🎯 Real-time Quiz Challenge</h1>
+<div class="container">
+    <div id="signup-form">
+        <h2>Đăng ký</h2>
+        <input type="text" id="signup-name" placeholder="Họ tên" required>
+        <input type="text" id="signup-username" placeholder="Tài khoản" required>
+        <input type="password" id="signup-password" placeholder="Mật khẩu" required>
+        <button onclick="signup()">Đăng ký</button>
+        <div class="switch" onclick="toggleForm('login')">Đã có tài khoản? Đăng nhập</div>
+    </div>
+
+    <div id="login-form" style="display:none">
+        <h2>Đăng nhập</h2>
+        <input type="text" id="login-username" placeholder="Tài khoản" required>
+        <input type="password" id="login-password" placeholder="Mật khẩu" required>
+        <button onclick="login()">Đăng nhập</button>
+        <div class="switch" onclick="toggleForm('signup')">Chưa có tài khoản? Đăng ký</div>
+    </div>
+</div>
+
+<script>
+    // Redirect nếu đã đăng nhập
+    const token = localStorage.getItem('token')
+    if (token) {
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]))
+            if (payload.exp && Date.now() / 1000 < payload.exp) {
+                window.location.href = "/quizzes"
+            }
+        } catch {}
+    }
+
+    function toggleForm(type) {
+        document.getElementById('signup-form').style.display = type === 'signup' ? 'block' : 'none';
+        document.getElementById('login-form').style.display = type === 'login' ? 'block' : 'none';
+    }
+
+    function signup() {
+        const name = document.getElementById('signup-name').value;
+        const username = document.getElementById('signup-username').value;
+        const password = document.getElementById('signup-password').value;
+        fetch('http://localhost:8080/user/sign-up', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, username, password })
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Đăng ký thành công')
+                    toggleForm('login')
+                } else {
+                    alert('Đăng ký thất bại')
+                }
+            })
+            .catch(err => alert('Lỗi đăng ký'))
+    }
+
+    function login() {
+        const username = document.getElementById('login-username').value;
+        const password = document.getElementById('login-password').value;
+        fetch('http://localhost:8080/user/log-in', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.data?.token) {
+                    localStorage.setItem('token', data.data.token)
+                    window.location.href = "/quizzes"
+                } else {
+                    alert('Đăng nhập thất bại')
+                }
+            })
+            .catch(err => alert('Lỗi đăng nhập'))
+    }
+</script>
+</body>
+</html>

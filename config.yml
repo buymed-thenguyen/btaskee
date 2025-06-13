@@ -1,0 +1,13 @@
+port: 8080
+
+database:
+  host: localhost
+  port: 5432
+  user: postgres
+  password: postgres
+  dbname: postgres
+  sslmode: disable
+
+auth:
+  jwt_secret: secret-key-12345 # for demo purpose, should save in another place
+  expire: 24                   # hour

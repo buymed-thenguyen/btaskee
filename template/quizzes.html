@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Danh sách Quiz</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f8f9fa; }
+        h1 { text-align: center; }
+        .join-room { text-align: center; margin-top: 20px; }
+        .join-room input {
+            padding: 8px 12px;
+            font-size: 16px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            margin-right: 8px;
+        }
+        .join-room button {
+            padding: 8px 16px;
+            font-size: 16px;
+            border: none;
+            background: #007bff;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .join-room button:hover {
+            background: #0056b3;
+        }
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 30px; }
+        .quiz-card {
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .quiz-card:hover {
+            transform: scale(1.03);
+            box-shadow: 0 0 12px rgba(0,0,0,0.2);
+        }
+        .quiz-title { font-weight: bold; margin-bottom: 10px; }
+        .quiz-meta { color: #555; font-size: 14px; }
+    </style>
+</head>
+<body>
+<h1>Chọn bài Quiz để bắt đầu</h1>
+<div class="join-room">
+    <input type="text" id="room-code" placeholder="Nhập mã phòng..." />
+    <button onclick="joinRoom()">Tham gia</button>
+</div>
+<div class="grid" id="quiz-list"></div>
+
+<script>
+    const token = localStorage.getItem("token")
+    if (!token) {
+        alert("Vui lòng đăng nhập");
+        window.location.href = "/"
+    }
+
+    fetch("http://localhost:8080/quiz", {
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+    })
+        .then(res => res.json())
+        .then(json => {
+            const list = document.getElementById("quiz-list")
+            json.data.forEach(quiz => {
+                const div = document.createElement("div")
+                div.className = "quiz-card"
+                div.innerHTML = `
+          <div class="quiz-title">${quiz.title}</div>
+          <div class="quiz-meta">Số câu hỏi: ${quiz.total_question}</div>
+        `
+                div.onclick = () => {
+                    if (confirm(`Tạo session chơi quiz: '${quiz.title}'?`)) {
+                        createSession(quiz.id)
+                    }
+                }
+                list.appendChild(div)
+            })
+        })
+        .catch(err => alert("Không thể tải danh sách quiz"))
+
+    function createSession(quizId) {
+        fetch("http://localhost:8080/session/create", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ quiz_id: quizId })
+        })
+            .then(res => res.json())
+            .then(json => {
+                const code = json.data.code
+                window.location.href = `/session?code=${code}`
+            })
+            .catch(err => alert("Không thể tạo session"))
+    }
+
+    function joinRoom() {
+        const code = document.getElementById("room-code").value.trim()
+        if (!code) return alert("Vui lòng nhập mã phòng")
+
+        fetch(`http://localhost:8080/session/${code}/join`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}` }
+        })
+            .then(res => {
+                if (!res.ok) throw new Error("Không thể tham gia phòng")
+                return res.json()
+            })
+            .then(() => {
+                window.location.href = `/session?code=${code}`
+            })
+            .catch(() => alert("Không thể tham gia phòng, mã không đúng hoặc đã bị khóa"))
+    }
+</script>
+</body>
+</html>
