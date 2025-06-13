@@ -51,6 +51,7 @@ func SetupRouter(authCfg *config.Auth) *gin.Engine {
 	r.StaticFile("/quizzes", "./template/quizzes.html")
 	r.StaticFile("/session", "./template/session.html")
 	r.StaticFile("/question", "./template/question.html")
+	r.StaticFile("/leaderboard", "./template/leaderboard.html")
 
 	return r
 }

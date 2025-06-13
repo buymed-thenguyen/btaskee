@@ -41,13 +41,42 @@
         }
         .quiz-title { font-weight: bold; margin-bottom: 10px; }
         .quiz-meta { color: #555; font-size: 14px; }
+        .logout-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px;
+            background: transparent;
+            color: #666;  /* Đổi màu sang xám */
+            border: none;
+            cursor: pointer;
+            font-size: 24px;
+            transition: color 0.3s;
+        }
+
+        .logout-button i {
+            transform: rotate(180deg);  /* Xoay icon 180 độ */
+            display: inline-block;  /* Cần thiết để transform hoạt động */
+        }
+
+        .logout-button:hover {
+            color: #333;  /* Màu xám đậm hơn khi hover */
+        }
+
+
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
+<button class="logout-button" onclick="logout()" title="Đăng xuất">
+    <i class="fas fa-sign-out-alt"></i>
+</button>
+
 <h1>Chọn bài Quiz để bắt đầu</h1>
 <div class="join-room">
     <input type="text" id="room-code" placeholder="Nhập mã phòng..." />
     <button onclick="joinRoom()">Tham gia</button>
+    <button onclick="viewLeaderboard()" style="background: #17a2b8;">Xem bảng xếp hạng</button>
 </div>
 <div class="grid" id="quiz-list"></div>
 
@@ -60,6 +89,11 @@
     if (!token) {
         alert("Vui lòng đăng nhập");
         window.location.href = "/"
+    }
+
+    function logout() {
+        localStorage.removeItem('token');
+        window.location.href = '/';
     }
 
     fetch(`${API_BASE_URL}/quiz`, {
@@ -102,6 +136,15 @@
                 window.location.href = `/session?code=${code}`
             })
             .catch(err => alert("Không thể tạo session"))
+    }
+
+    function viewLeaderboard() {
+        const code = document.getElementById('room-code').value.trim();
+        if (!code) {
+            alert('Vui lòng nhập mã phòng');
+            return;
+        }
+        window.location.href = `/leaderboard?code=${code}`;
     }
 
     function joinRoom() {

@@ -12,9 +12,34 @@
         .user.me { background: #333; color: white; font-weight: bold; }
         #start-btn { padding: 12px 24px; font-size: 16px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; margin-top: 20px; }
         #start-btn:hover { background: #218838; }
+        .logout-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px;
+            background: transparent;
+            color: #666;  /* Đổi màu sang xám */
+            border: none;
+            cursor: pointer;
+            font-size: 24px;
+            transition: color 0.3s;
+        }
+
+        .logout-button i {
+            transform: rotate(180deg);
+            display: inline-block;
+        }
+
+        .logout-button:hover {
+            color: #333;
+        }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
+<button class="logout-button" onclick="logout()" title="Đăng xuất">
+    <i class="fas fa-sign-out-alt"></i>
+</button>
 <div class="code-box" id="session-code">Mã phòng: ...</div>
 <div class="quiz-info" id="quiz-info">Đang tải thông tin...</div>
 <div class="participants" id="participant-list"></div>
@@ -34,6 +59,11 @@
         location.href = '/'
     }
 
+    function logout() {
+        localStorage.removeItem('token');
+        window.location.href = '/';
+    }
+    
     const urlParams = new URLSearchParams(window.location.search)
     const code = urlParams.get('code')
     const userId = parseJwt(token).user_id

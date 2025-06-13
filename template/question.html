@@ -454,9 +454,9 @@
                     if (u.time_consumed) {
                         const minutes = Math.floor(u.time_consumed / 60000);
                         const seconds = Math.floor((u.time_consumed % 60000) / 1000);
-                        scoreTime.innerText = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                        scoreTime.innerText = `${minutes}m ${seconds.toString().padStart(2, '0')}s`;
                     } else {
-                        scoreTime.innerText = '--:--';
+                        scoreTime.innerText = '--';
                     }
 
                     scoreInfo.appendChild(scorePoints);

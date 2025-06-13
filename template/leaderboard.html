@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Bảng xếp hạng</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f3f3f3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px;
+            margin: 0;
+        }
+
+        .session-code {
+            font-size: 28px;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 30px;
+        }
+
+        .leaderboard {
+            width: 100%;
+            max-width: 600px;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .player {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 8px;
+            background: #f8f9fa;
+            position: relative;
+        }
+
+        .rank {
+            width: 30px;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+
+        .rank-1 { color: gold; }
+        .rank-2 { color: silver; }
+        .rank-3 { color: #cd7f32; }
+
+        .name {
+            flex-grow: 1;
+            font-weight: 500;
+        }
+
+        .stats {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .score {
+            font-weight: bold;
+            color: #28a745;
+        }
+
+        .time {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+
+        .movement {
+            position: absolute;
+            left: -20px;
+            color: #28a745;
+        }
+
+        .movement.down {
+            color: #dc3545;
+        }
+
+        .back-button {
+            margin-top: 30px;
+            padding: 12px 24px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .back-button:hover {
+            background: #0056b3;
+        }
+        .logout-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px;
+            background: transparent;
+            color: #666;  /* Đổi màu sang xám */
+            border: none;
+            cursor: pointer;
+            font-size: 24px;
+            transition: color 0.3s;
+        }
+
+        .logout-button i {
+            transform: rotate(180deg);  /* Xoay icon 180 độ */
+            display: inline-block;  /* Cần thiết để transform hoạt động */
+        }
+
+        .logout-button:hover {
+            color: #333;  /* Màu xám đậm hơn khi hover */
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+<button class="logout-button" onclick="logout()" title="Đăng xuất">
+    <i class="fas fa-sign-out-alt"></i>
+</button>
+
+<div class="session-code" id="session-code"></div>
+<div class="leaderboard" id="leaderboard"></div>
+<button class="back-button" onclick="location.href='/quizzes'">Quay về trang Quiz</button>
+
+<script>
+    const API_BASE_URL = window.location.hostname === 'localhost'
+        ? 'http://localhost:8080'
+        : 'https://btaskee.up.railway.app';
+
+    const WS_BASE_URL = window.location.hostname === 'localhost'
+        ? 'ws://localhost:8080'
+        : 'wss://btaskee.up.railway.app';
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+        alert('Vui lòng đăng nhập');
+        location.href = '/';
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+
+    document.getElementById('session-code').innerText = `#${code}`;
+
+    let previousRanks = new Map();
+
+    function logout() {
+        localStorage.removeItem('token');
+        window.location.href = '/';
+    }
+
+    function formatTime(ms) {
+        if (!ms || isNaN(ms)) return '--';
+        const seconds = Math.floor(ms / 1000);
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins}m ${secs.toString().padStart(2, '0')}s`;
+    }
+
+    function getRankSymbol(index) {
+        if (index === 0) return '👑';
+        if (index === 1) return '🥈';
+        if (index === 2) return '🥉';
+        return `#${index + 1}`;
+    }
+
+    function getMovementArrow(currentRank, previousRank) {
+        if (!previousRank) return '';
+        if (currentRank < previousRank) return '<span class="movement">↑</span>';
+        if (currentRank > previousRank) return '<span class="movement down">↓</span>';
+        return '';
+    }
+
+    function updateLeaderboard(players) {
+        const leaderboardEl = document.getElementById('leaderboard');
+        leaderboardEl.innerHTML = '';
+
+        players.forEach((player, index) => {
+            const previousRank = previousRanks.get(player.user_id);
+            const movement = getMovementArrow(index, previousRank);
+
+            const playerEl = document.createElement('div');
+            playerEl.className = 'player';
+            playerEl.innerHTML = `
+                    ${movement}
+                    <div class="rank rank-${index + 1}">${getRankSymbol(index)}</div>
+                    <div class="name">${player.user_name}</div>
+                    <div class="stats">
+                        <div class="score">${player.score} điểm</div>
+                        <div class="time">${formatTime(player.time_consumed)}</div>
+                    </div>
+                `;
+            leaderboardEl.appendChild(playerEl);
+            previousRanks.set(player.user_id, index);
+        });
+    }
+
+    // Load initial leaderboard
+    fetch(`${API_BASE_URL}/session/${code}/leaderboard`, {
+        headers: { Authorization: `Bearer ${token}` }
+    })
+        .then(res => res.json())
+        .then(json => {
+            if (json.success) {
+                updateLeaderboard(json.data);
+            }
+        });
+
+    // Connect WebSocket
+    const ws = new WebSocket(`${WS_BASE_URL}/ws/${code}`);
+    ws.onmessage = (event) => {
+        const msg = JSON.parse(event.data);
+        if (msg.event === 'user_answered') {
+            fetch(`${API_BASE_URL}/session/${code}/leaderboard`, {
+                headers: { Authorization: `Bearer ${token}` }
+            })
+                .then(res => res.json())
+                .then(json => {
+                    if (json.success) {
+                        updateLeaderboard(json.data);
+                    }
+                });
+        }
+    };
+</script>
+</body>
+</html>
