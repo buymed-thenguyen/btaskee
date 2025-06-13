@@ -130,6 +130,13 @@
 </div>
 
 <script>
+    const API_BASE_URL = window.location.hostname === 'localhost'
+        ? 'http://localhost:8080'
+        : 'https://btaskee.up.railway.app';
+    const WS_BASE_URL = window.location.hostname === 'localhost'
+        ? 'ws://localhost:8080'
+        : 'wss://btaskee.up.railway.app';
+
     // Redirect nếu đã đăng nhập
     const token = localStorage.getItem('token')
     if (token) {
@@ -150,7 +157,7 @@
         const name = document.getElementById('signup-name').value;
         const username = document.getElementById('signup-username').value;
         const password = document.getElementById('signup-password').value;
-        fetch('http://localhost:8080/user/sign-up', {
+        fetch(`${API_BASE_URL}/user/sign-up`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, username, password })
@@ -170,7 +177,7 @@
     function login() {
         const username = document.getElementById('login-username').value;
         const password = document.getElementById('login-password').value;
-        fetch('http://localhost:8080/user/log-in', {
+        fetch(`${API_BASE_URL}/user/log-in`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password })

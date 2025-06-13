@@ -52,13 +52,17 @@
 <div class="grid" id="quiz-list"></div>
 
 <script>
+    const API_BASE_URL = window.location.hostname === 'localhost'
+        ? 'http://localhost:8080'
+        : 'https://btaskee.up.railway.app';
+
     const token = localStorage.getItem("token")
     if (!token) {
         alert("Vui lòng đăng nhập");
         window.location.href = "/"
     }
 
-    fetch("http://localhost:8080/quiz", {
+    fetch(`${API_BASE_URL}/quiz`, {
         headers: {
             Authorization: `Bearer ${token}`
         }
@@ -84,7 +88,7 @@
         .catch(err => alert("Không thể tải danh sách quiz"))
 
     function createSession(quizId) {
-        fetch("http://localhost:8080/session/create", {
+        fetch(`${API_BASE_URL}/session/create`, {
             method: "POST",
             headers: {
                 "Authorization": `Bearer ${token}`,
@@ -104,7 +108,7 @@
         const code = document.getElementById("room-code").value.trim()
         if (!code) return alert("Vui lòng nhập mã phòng")
 
-        fetch(`http://localhost:8080/session/${code}/join`, {
+        fetch(`${API_BASE_URL}/session/${code}/join`, {
             method: "POST",
             headers: { Authorization: `Bearer ${token}` }
         })
