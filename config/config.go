@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"github.com/golang-jwt/jwt/v5"
 	"gopkg.in/yaml.v3"
+	"net/url"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -49,7 +52,35 @@ func Load() (*Config, error) {
 	}
 
 	authCfg = &appConfig.Auth
+
+	// fallback for deploy Railway
+	envURL := os.Getenv("DATABASE_URL")
+	if envURL != "" {
+		appConfig.Database = fallbackDBConfigForRailway(envURL)
+	}
+
 	return appConfig, nil
+}
+
+func fallbackDBConfigForRailway(envURL string) DatabaseConfig {
+	u, err := url.Parse(envURL)
+	if err != nil {
+		return DatabaseConfig{}
+	}
+
+	password, _ := u.User.Password()
+	return DatabaseConfig{
+		Host:     u.Hostname(),
+		Port:     parsePort(u.Port()),
+		User:     u.User.Username(),
+		Password: password,
+		DBName:   strings.TrimPrefix(u.Path, "/"),
+	}
+}
+
+func parsePort(s string) int {
+	p, _ := strconv.Atoi(s)
+	return p
 }
 
 func (c DatabaseConfig) DSN() string {
